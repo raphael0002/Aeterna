@@ -1,0 +1,96 @@
+name: application
+description: "Aeterna App — turn moments into collectible ticket stubs."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── State management ──────────────────────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+
+  # ── Navigation ────────────────────────────────────────────────────────────
+  go_router: ^14.2.7
+
+  # ── Fonts ─────────────────────────────────────────────────────────────────
+  # Inter for UI, JetBrains Mono for ticket serials / dates.
+  # ponytail: bundle GeneralSans for production — google_fonts is fine for now.
+  google_fonts: ^6.2.1
+
+  # ── Media ─────────────────────────────────────────────────────────────────
+  image_picker: ^1.1.2
+
+  # ── Storage ───────────────────────────────────────────────────────────────
+  path_provider: ^2.1.4
+
+  # ── Utilities ─────────────────────────────────────────────────────────────
+  intl: ^0.19.0
+  uuid: ^4.4.2 # collision-safe IDs (replaces microsecond timestamp hack)
+
+  # ── UI / Layout ───────────────────────────────────────────────────────────
+  flutter_staggered_grid_view: ^0.7.0 # scrapbook masonry grid
+
+  syncfusion_flutter_maps: ^27.1.48
+
+  table_calendar: ^3.1.2
+
+  # ── Maps ──────────────────────────────────────────────────────────────────
+  flutter_map: ^7.0.2 # OSM tile map, no API key required
+  latlong2: ^0.9.1 # LatLng type consumed by flutter_map
+
+  # ── QR ────────────────────────────────────────────────────────────────────
+  qr_flutter: ^4.1.0
+
+  shared_preferences: ^2.3.2
+
+  # ── Sharing / file I/O ────────────────────────────────────────────────────
+  share_plus: ^10.0.2 # native share sheet — reveal cards + backup export
+  file_selector: ^1.0.3 # pick a .json backup file to import
+
+  flutter_native_splash: ^2.4.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+# Home-screen launcher icon: white infinity on rust (adaptive on Android).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#C1502C"
+  adaptive_icon_foreground: "assets/icon/app_icon_fg.png"
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/maps/world.json
+
+# Native splash ONLY (no Flutter overlay). Rust infinity on cream. Sized
+# variants generated from logo_splash.png: Logo_splash (~180dp, legacy/iOS) and
+# Logo_android12 (padded 1152 canvas so the mark sits at ~66% of the icon slot).
+flutter_native_splash:
+  color: "#FAF7F2"
+  color_dark: "#FAF7F2"
+  image: assets/splash/Logo_splash.png
+  image_dark: assets/splash/Logo_splash.png
+
+  android_12:
+    color: "#FAF7F2"
+    color_dark: "#FAF7F2"
+    image: assets/splash/Logo_android12.png
+    icon_background_color: "#FAF7F2"
+
+  ios_content_mode: center
+  fullscreen: false
+  android: true
+  ios: true
+  web: false
