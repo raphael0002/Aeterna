@@ -1,0 +1,177 @@
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Logs
+# =========================
+*.log
+*.tmp
+*.swp
+*.swo
+*.stackdump
+
+# =========================
+# IDEs
+# =========================
+
+# VS Code
+.vscode/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# =========================
+# Flutter / Dart
+# =========================
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+
+.flutter-versions
+
+# Generated API docs
+doc/api/
+
+# Dart
+*.dart.js
+*.dart_tool
+
+# =========================
+# Flutter Generated
+# =========================
+
+**/generated_plugin_registrant.dart
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.metadata
+
+# =========================
+# Android
+# =========================
+
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/captures/
+
+# APK / App Bundles
+*.apk
+*.ap_
+*.aab
+
+# Native symbols
+*.so
+
+# NDK
+.externalNativeBuild/
+.cxx/
+
+# =========================
+# iOS
+# =========================
+
+ios/.symlinks/
+ios/Pods/
+ios/Flutter/.last_build_id
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Xcode
+DerivedData/
+*.xcworkspace
+!ios/Runner.xcworkspace/
+*.xcuserstate
+*.xcuserdata/
+
+# =========================
+# macOS
+# =========================
+
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# =========================
+# Linux
+# =========================
+
+linux/flutter/ephemeral/
+
+# =========================
+# Windows
+# =========================
+
+windows/flutter/ephemeral/
+
+# =========================
+# Web
+# =========================
+
+web/.dart_tool/
+
+# =========================
+# FVM
+# =========================
+
+.fvm/
+.fvmrc
+
+# Uncomment if everyone should use FVM
+# !.fvmrc
+
+# =========================
+# Firebase
+# =========================
+
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# =========================
+# Environment
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+# Temporary
+# =========================
+
+*.bak
+*.orig
+*.rej
+*.old
+
+# =========================
+# Misc
+# =========================
+
+.history/
+.svn/
+.atom/
+
+# =========================
+# Keep these tracked
+# =========================
+
+!android/gradle/wrapper/gradle-wrapper.jar
+!ios/Runner.xcodeproj/project.pbxproj
+
+.impeccable/
