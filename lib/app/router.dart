@@ -1,19 +1,41 @@
+// lib/app/router.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/ticket_store_provider.dart';
 import '../screens/home_shell.dart';
 import '../screens/location_picker_screen.dart';
+import '../screens/onboarding_screen.dart';
 import '../screens/recap_screen.dart';
 import '../screens/share_screen.dart';
 import '../screens/ticket_detail_screen.dart';
 import '../screens/ticket_form_screen.dart';
 
+bool onboardingSeen = false;
+
 final appRouter = GoRouter(
+  redirect: (context, state) {
+    final atOnboarding = state.matchedLocation == '/onboarding';
+    if (!onboardingSeen && !atOnboarding) return '/onboarding';
+    if (onboardingSeen && atOnboarding) return '/';
+    return null;
+  },
   routes: [
-    GoRoute(path: '/', builder: (_, _) => const HomeShell()),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => OnboardingScreen(
+        onDone: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('onboarding_done', true);
+          onboardingSeen = true;
+          if (context.mounted) context.go('/');
+        },
+      ),
+    ),
+    GoRoute(path: '/', builder: (_, __) => const HomeShell()),
     GoRoute(
       path: '/new',
       builder: (context, state) {

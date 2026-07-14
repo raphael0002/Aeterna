@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -117,7 +118,7 @@ class _EmptyRecap extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.auto_awesome_rounded,
+                        Amicons.iconly_star_fill,
                         color: Colors.white,
                         size: 40,
                       ),
@@ -197,7 +198,7 @@ class _CloseButton extends StatelessWidget {
         child: const SizedBox(
           width: 40,
           height: 40,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 20),
+          child: Icon(Amicons.iconly_close_square_fill, color: Colors.white, size: 20),
         ),
       ),
     );
@@ -362,7 +363,7 @@ class _VenuePage extends StatelessWidget {
             ).copyWith(letterSpacing: 1.6),
           ),
           const SizedBox(height: 20),
-          const Icon(Icons.place_rounded, color: Colors.white, size: 48),
+          const Icon(Amicons.iconly_location_fill, color: Colors.white, size: 48),
           const SizedBox(height: 20),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -427,7 +428,7 @@ class _MemorablePage extends StatelessWidget {
                 return const Padding(
                   padding: EdgeInsets.only(right: 4),
                   child: Icon(
-                    Icons.star_rounded,
+                    Amicons.iconly_star_fill,
                     color: Colors.white,
                     size: 26,
                   ),
@@ -597,7 +598,7 @@ class _ClosingPage extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.auto_awesome_rounded,
+              Amicons.iconly_star_fill,
               color: Colors.white,
               size: 40,
             ),
@@ -656,7 +657,7 @@ class _SwipeHint extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.keyboard_arrow_up_rounded,
+            Amicons.iconly_arrow_up_2_fill,
             color: color.withValues(alpha: 0.7),
             size: 20,
           ),

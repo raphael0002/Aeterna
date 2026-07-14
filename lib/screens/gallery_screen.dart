@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +8,9 @@ import '../models/ticket.dart';
 import '../providers/filter_providers.dart';
 import '../providers/ticket_store_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/memory_ticket_card.dart';
+import '../widgets/ticket_skeleton.dart';
 import '../widgets/world_map_backdrop.dart';
-import 'calendar_screen.dart'; // ← imports CompactTicketRow
 
 const _kSheetBg = Color(0xFFF0EAE0);
 
@@ -89,7 +91,13 @@ class GalleryScreen extends ConsumerWidget {
                   clipper: const _SheetTopClipper(),
                   child: Container(
                     color: _kSheetBg,
-                    child: all.isEmpty
+                    child: !store.isLoaded
+                        ? _CompactList(
+                            tickets: const [],
+                            onTap: (_) {},
+                            loading: true,
+                          )
+                        : all.isEmpty
                         ? _EmptyGallery(onAdd: () => _add(context))
                         : tickets.isEmpty
                         ? _EmptyFilter(category: filter!)
@@ -203,7 +211,7 @@ class _Hero extends StatelessWidget {
               children: [
                 _HeroChip(
                   label: 'All',
-                  icon: Icons.apps_rounded,
+                  icon: Amicons.iconly_category_fill,
                   count: total,
                   selected: category == null,
                   onTap: () => onCategoryChanged(null),
@@ -302,8 +310,13 @@ class _HeroChip extends StatelessWidget {
 class _CompactList extends StatelessWidget {
   final List<Ticket> tickets;
   final void Function(Ticket) onTap;
+  final bool loading;
 
-  const _CompactList({required this.tickets, required this.onTap});
+  const _CompactList({
+    required this.tickets,
+    required this.onTap,
+    this.loading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,16 +357,21 @@ class _CompactList extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.separated(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-            itemCount: tickets.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (ctx, i) => CompactTicketRow(
-              ticket: tickets[i],
-              onTap: () => onTap(tickets[i]),
-            ),
-          ),
+          child: loading
+              ? const TicketListSkeleton(
+                  padding: EdgeInsets.fromLTRB(20, 4, 20, 120),
+                )
+              : ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+                  itemCount: tickets.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
+                  itemBuilder: (ctx, i) => MemoryTicketCard(
+                    ticket: tickets[i],
+                    variant: MemoryCardVariant.compact,
+                    onTap: () => onTap(tickets[i]),
+                  ),
+                ),
         ),
       ],
     );
@@ -379,7 +397,7 @@ class _EmptyGallery extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.grid_view_rounded,
+                Amicons.iconly_category_fill,
                 size: 72,
                 color: AppColors.primary,
               ),
@@ -401,7 +419,7 @@ class _EmptyGallery extends StatelessWidget {
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded, size: 20),
+              icon: const Icon(Amicons.iconly_plus_fill, size: 20),
               label: const Text('Capture a memory'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,

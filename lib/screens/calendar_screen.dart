@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import '../models/ticket.dart';
 import '../providers/filter_providers.dart';
 import '../providers/ticket_store_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/memory_ticket_card.dart';
 import '../widgets/world_map_backdrop.dart';
 
 // Deeper cream for sheet, so white cards visually lift
@@ -207,9 +209,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                   itemCount: selectedTickets.length,
                                   separatorBuilder: (_, _) =>
-                                      const SizedBox(height: 10),
-                                  itemBuilder: (ctx, i) => CompactTicketRow(
+                                      const SizedBox(height: 14),
+                                  itemBuilder: (ctx, i) => MemoryTicketCard(
                                     ticket: selectedTickets[i],
+                                    variant: MemoryCardVariant.compact,
                                     onTap: () => context.push(
                                       '/ticket/${selectedTickets[i].id}',
                                     ),
@@ -279,7 +282,7 @@ class _Hero extends StatelessWidget {
         children: [
           Row(
             children: [
-              _CircleBtn(icon: Icons.chevron_left_rounded, onTap: onPrev),
+              _CircleBtn(icon: Amicons.iconly_arrow_left_2_fill, onTap: onPrev),
               const SizedBox(width: 8),
               Expanded(
                 child: GestureDetector(
@@ -304,7 +307,7 @@ class _Hero extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         const Icon(
-                          Icons.keyboard_arrow_down_rounded,
+                          Amicons.iconly_arrow_down_2_fill,
                           color: Colors.white,
                           size: 18,
                         ),
@@ -314,7 +317,7 @@ class _Hero extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _CircleBtn(icon: Icons.chevron_right_rounded, onTap: onNext),
+              _CircleBtn(icon: Amicons.iconly_arrow_right_2_fill, onTap: onNext),
             ],
           ),
           const Spacer(),
@@ -387,7 +390,7 @@ class _TodayButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.today_rounded,
+                Amicons.iconly_calendar_fill,
                 size: 15,
                 color: highlighted ? AppColors.primary : Colors.white,
               ),
@@ -665,7 +668,7 @@ class _EmptyDay extends StatelessWidget {
               width: 72,
               height: 72,
               child: const Icon(
-                Icons.event_note_rounded,
+                Amicons.iconly_calendar_fill,
                 color: AppColors.primary,
                 size: 72,
               ),
@@ -812,7 +815,7 @@ class CompactTicketRow extends StatelessWidget {
                   ),
                   if (ticket.favorite)
                     const Icon(
-                      Icons.star_rounded,
+                      Amicons.iconly_star_fill,
                       color: Color(0xFFFFC94A),
                       size: 16,
                     ),
@@ -823,8 +826,10 @@ class CompactTicketRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _TimeBlock(
-                    time: DateFormat('h:mm a').format(ticket.date),
-                    label: ticket.venue.isEmpty ? 'Event' : ticket.venue,
+                    time: DateFormat('d MMM').format(ticket.date),
+                    label: ticket.venue.isEmpty
+                        ? DateFormat('EEEE').format(ticket.date)
+                        : ticket.venue,
                   ),
                   Expanded(
                     child: _PathVisual(
@@ -833,8 +838,8 @@ class CompactTicketRow extends StatelessWidget {
                     ),
                   ),
                   _TimeBlock(
-                    time: DateFormat('h:mm a').format(ticket.createdAt),
-                    label: 'Saved',
+                    time: ticket.rating > 0 ? '${ticket.rating}/5' : '—',
+                    label: 'Rating',
                     alignEnd: true,
                   ),
                 ],
@@ -851,8 +856,8 @@ class CompactTicketRow extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 2),
                           child: Icon(
                             i < ticket.rating
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
+                                ? Amicons.iconly_star_fill
+                                : Amicons.iconly_star_fill,
                             size: 13,
                             color: i < ticket.rating
                                 ? ticket.category.color

@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -151,14 +152,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: Row(
                 children: [
                   _MapButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
+                    icon: Amicons.iconly_arrow_left_2_fill,
                     onTap: () => Navigator.of(context).pop(),
                   ),
                   Expanded(
                     child: Center(child: _MapPill(text: 'Tap to drop a pin')),
                   ),
                   if (_picked != null)
-                    _MapButton(icon: Icons.close_rounded, onTap: _clear)
+                    _MapButton(
+                      icon: Amicons.iconly_close_square_fill,
+                      onTap: _clear,
+                    )
                   else
                     const SizedBox(width: 42),
                 ],
@@ -173,7 +177,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             child: Column(
               children: [
                 _MapButton(
-                  icon: Icons.add_rounded,
+                  icon: Amicons.iconly_plus_fill,
                   onTap: () {
                     final z = _controller.camera.zoom;
                     _controller.move(_controller.camera.center, z + 1);
@@ -229,8 +233,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                             ),
                             child: Icon(
                               _picked != null
-                                  ? Icons.place_rounded
-                                  : Icons.location_searching_rounded,
+                                  ? Amicons.iconly_location_fill
+                                  : Amicons.iconly_location_fill,
                               size: 20,
                               color: _picked != null
                                   ? AppColors.primary
@@ -411,7 +415,11 @@ class _PinBody extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(Icons.place_rounded, color: Colors.white, size: 22),
+      child: const Icon(
+        Amicons.iconly_location_fill,
+        color: Colors.white,
+        size: 22,
+      ),
     );
   }
 }

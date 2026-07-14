@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../models/ticket.dart';
 import '../providers/ticket_store_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/boarding_pass_card.dart';
+import '../widgets/memory_ticket_card.dart';
 import '../widgets/qr_sheet.dart';
 import '../widgets/world_map_backdrop.dart';
 
@@ -112,16 +113,9 @@ class TicketDetailScreen extends ConsumerWidget {
                 height: cardZoneH,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                  child: BoardingPassCard(
+                  child: MemoryTicketCard(
                     ticket: ticket,
-                    secondaryLabel: 'Add to Apple Wallet',
-                    onSecondaryAction: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Wallet integration coming soon'),
-                        ),
-                      );
-                    },
+                    variant: MemoryCardVariant.feature,
                   ),
                 ),
               ),
@@ -275,13 +269,13 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           _SquareIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: Amicons.iconly_arrow_left_2_fill,
             onTap: () => context.pop(),
           ),
           Expanded(
             child: Center(
               child: Text(
-                'Boarding pass',
+                'Memory ticket',
                 style: AppType.body.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -292,15 +286,15 @@ class _TopBar extends StatelessWidget {
           // ── Favorite toggle (instant action) ────────────────
           _SquareIconButton(
             icon: ticket.favorite
-                ? Icons.star_rounded
-                : Icons.star_outline_rounded,
+                ? Amicons.iconly_star_fill
+                : Amicons.iconly_star,
             iconColor: ticket.favorite ? const Color(0xFFFFC94A) : Colors.white,
             onTap: () => _toggleFavorite(context),
           ),
           const SizedBox(width: 6),
           // ── More menu (Edit / Delete / Share) ───────────────
           _SquareIconButton(
-            icon: Icons.more_horiz_rounded,
+            icon: Amicons.iconly_more_square_fill,
             onTap: () => _openMoreMenu(context),
           ),
         ],
@@ -532,7 +526,7 @@ class _MoreSheet extends StatelessWidget {
             const _SheetDivider(),
 
             _SheetTile(
-              icon: Icons.edit_rounded,
+              icon: Amicons.iconly_edit_fill,
               label: 'Edit ticket',
               subtitle: 'Update details, photo, or rating',
               onTap: onEdit,
@@ -540,14 +534,14 @@ class _MoreSheet extends StatelessWidget {
             ),
             const _SheetDivider(),
             _SheetTile(
-              icon: Icons.ios_share_rounded,
+              icon: Amicons.iconly_send_fill,
               label: 'Share',
               subtitle: 'Export ticket as an image',
               onTap: onShare,
             ),
             const _SheetDivider(),
             _SheetTile(
-              icon: Icons.delete_outline_rounded,
+              icon: Amicons.iconly_delete_fill,
               label: 'Delete ticket',
               subtitle: 'Permanently remove this memory',
               onTap: onDelete,
@@ -630,7 +624,7 @@ class _SheetTile extends StatelessWidget {
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
+              Amicons.iconly_arrow_right_2_fill,
               color: destructive
                   ? AppColors.danger.withValues(alpha: 0.5)
                   : AppColors.textTertiary,

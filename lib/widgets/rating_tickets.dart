@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
@@ -27,8 +28,8 @@ class RatingTickets extends StatelessWidget {
         final filled = i < rating;
         final glyph = Icon(
           filled
-              ? Icons.confirmation_number
-              : Icons.confirmation_number_outlined,
+              ? Amicons.iconly_ticket_fill
+              : Amicons.iconly_ticket,
           size: size,
           color: filled ? color : AppColors.textTertiary.withValues(alpha: 0.6),
         );

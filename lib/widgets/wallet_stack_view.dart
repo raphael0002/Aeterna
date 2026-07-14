@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/ticket.dart';
-import 'wallet_ticket_card.dart';
+import 'memory_ticket_card.dart';
 
 /// Vertical scrolling list of wallet ticket cards.
 /// Cards are shown one after another with breathing room between them.
@@ -26,7 +26,7 @@ class WalletStackView extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (context, i) {
         final t = tickets[i];
-        return WalletTicketCard(ticket: t, onTap: () => onTap(t));
+        return MemoryTicketCard(ticket: t, onTap: () => onTap(t));
       },
     );
   }

@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -36,11 +37,11 @@ class _ScrapbookScreenState extends ConsumerState<ScrapbookScreen> {
         appBar: AppBar(title: Text('Gallery', style: AppType.h1)),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _add(context),
-          icon: const Icon(Icons.add_rounded),
+          icon: const Icon(Amicons.iconly_plus_fill),
           label: const Text('New stub'),
         ),
         body: AppEmptyState(
-          icon: Icons.grid_view_outlined,
+          icon: Amicons.iconly_category_fill,
           title: 'Your gallery is empty',
           message: 'Saved memories appear here as a collage.',
           ctaLabel: 'New stub',
@@ -200,7 +201,7 @@ class _ScrapCard extends StatelessWidget {
                       ),
                       if (ticket.favorite)
                         const Icon(
-                          Icons.favorite_rounded,
+                          Amicons.iconly_heart_fill,
                           size: 12,
                           color: AppColors.primary,
                         ),

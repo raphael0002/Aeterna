@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 
 class FoilSeal extends StatefulWidget {
@@ -59,7 +60,7 @@ class _FoilSealState extends State<FoilSeal>
           ],
         ),
         child: Icon(
-          Icons.verified_rounded,
+          Amicons.iconly_shield_done_fill,
           size: widget.size * 0.48,
           color: Colors.white.withValues(alpha: 0.92),
         ),

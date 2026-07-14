@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -14,7 +15,7 @@ class QrSheet extends StatelessWidget {
     super.key,
     required this.data,
     this.onExpand,
-    this.caption = 'Show the QR code at the boarding gate',
+    this.caption = 'Scan to open this memory',
   });
 
   @override
@@ -26,7 +27,7 @@ class QrSheet extends StatelessWidget {
           clipper: const _QrSheetClipper(),
           child: Container(
             width: double.infinity,
-            color: const Color(0xFFEEEAE3),
+            color: Colors.white,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final h = constraints.maxHeight;
@@ -77,7 +78,7 @@ class QrSheet extends StatelessWidget {
                                         width: 38,
                                         height: 38,
                                         child: Icon(
-                                          Icons.open_in_new_rounded,
+                                          Amicons.iconly_send_fill,
                                           size: 18,
                                           color: AppColors.primary,
                                         ),

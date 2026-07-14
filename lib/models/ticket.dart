@@ -1,5 +1,7 @@
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'ticket_template.dart';
 
 String ticketDeepLink(String id) => 'memoryticket://ticket/$id';
 
@@ -30,10 +32,10 @@ extension TicketCategoryX on TicketCategory {
       };
 
   IconData get icon => switch (this) {
-        TicketCategory.concert => Icons.music_note_rounded,
-        TicketCategory.travel => Icons.flight_rounded,
-        TicketCategory.milestone => Icons.celebration_rounded,
-        TicketCategory.everyday => Icons.wb_sunny_rounded,
+        TicketCategory.concert => Amicons.iconly_voice_fill,
+        TicketCategory.travel => Amicons.iconly_discovery_fill,
+        TicketCategory.milestone => Amicons.iconly_ticket_star_fill,
+        TicketCategory.everyday => Amicons.iconly_activity_fill,
       };
 
   Color get lightBg => bg;
@@ -53,6 +55,8 @@ class Ticket {
   final bool favorite;
   final double? lat;
   final double? lng;
+  final List<String> tags;
+  final TicketTemplate template;
   final DateTime createdAt;
 
   const Ticket({
@@ -69,6 +73,8 @@ class Ticket {
     required this.lat,
     required this.lng,
     required this.createdAt,
+    this.tags = const [],
+    this.template = TicketTemplate.classic,
   });
 
   bool get hasLocation => lat != null && lng != null;
@@ -86,6 +92,8 @@ class Ticket {
     bool? favorite,
     double? lat,
     double? lng,
+    List<String>? tags,
+    TicketTemplate? template,
   }) {
     return Ticket(
       id: id,
@@ -100,6 +108,8 @@ class Ticket {
       favorite: favorite ?? this.favorite,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
+      tags: tags ?? this.tags,
+      template: template ?? this.template,
       createdAt: createdAt,
     );
   }
@@ -117,6 +127,8 @@ class Ticket {
         'favorite': favorite,
         'lat': lat,
         'lng': lng,
+        'tags': tags,
+        'template': template.name,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -136,6 +148,9 @@ class Ticket {
         favorite: j['favorite'] as bool? ?? false,
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
+        tags: (j['tags'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
+        template: templateFromName(j['template'] as String?),
         createdAt: DateTime.parse(
             j['createdAt'] as String? ?? DateTime.now().toIso8601String()),
       );

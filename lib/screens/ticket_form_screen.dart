@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:amicons/amicons.dart';
+import 'package:exif/exif.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,8 +10,9 @@ import 'package:latlong2/latlong.dart';
 
 import '../data/ticket_store.dart';
 import '../models/ticket.dart';
+import '../models/ticket_template.dart';
 import '../theme/app_theme.dart';
-import '../widgets/wallet_ticket_card.dart';
+import '../widgets/memory_ticket_card.dart';
 import 'location_picker_screen.dart';
 
 class TicketFormScreen extends StatefulWidget {
@@ -34,6 +37,9 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
   late DateTime _date;
   late int _rating;
   late bool _favorite;
+  late List<String> _tags;
+  late TicketTemplate _template;
+  final _tagInput = TextEditingController();
 
   String? _pickedImagePath;
   double? _lat;
@@ -54,6 +60,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
     _date = e?.date ?? DateTime.now();
     _rating = e?.rating ?? 0;
     _favorite = e?.favorite ?? false;
+    _tags = List<String>.from(e?.tags ?? const []);
+    _template = e?.template ?? TicketTemplate.classic;
     _lat = e?.lat;
     _lng = e?.lng;
     for (final c in [_title, _venue, _note]) {
@@ -71,6 +79,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
     _title.dispose();
     _venue.dispose();
     _note.dispose();
+    _tagInput.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -92,23 +101,121 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
       favorite: _favorite,
       lat: _lat,
       lng: _lng,
+      tags: _tags,
+      template: _template,
       createdAt: base?.createdAt ?? DateTime.now(),
     );
   }
 
+  void _addTag(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return;
+    // Case-insensitive dedupe; cap length + count to keep stubs tidy.
+    final exists = _tags.any((e) => e.toLowerCase() == t.toLowerCase());
+    if (exists || _tags.length >= 12) {
+      _tagInput.clear();
+      return;
+    }
+    setState(() {
+      _tags.add(t.length > 24 ? t.substring(0, 24) : t);
+      _tagInput.clear();
+    });
+  }
+
+  void _removeTag(String tag) => setState(() => _tags.remove(tag));
+
   Future<void> _pickImage() async {
     try {
-      final x = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 2000,
-        imageQuality: 88,
-      );
-      if (x != null) setState(() => _pickedImagePath = x.path);
+      // No maxWidth/imageQuality: those re-encode and strip EXIF, which we
+      // need for capture-date + GPS auto-fill.
+      final x = await _picker.pickImage(source: ImageSource.gallery);
+      if (x == null) return;
+      setState(() => _pickedImagePath = x.path);
+      await _autofillFromExif(File(x.path));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Could not access photos')));
+    }
+  }
+
+  /// Pull capture date + GPS from the photo's EXIF and, when found, auto-fill
+  /// the date, coordinates, and (via reverse-geocode) the place name.
+  /// Never overwrites values the user already entered.
+  Future<void> _autofillFromExif(File file) async {
+    Map<String, IfdTag> tags;
+    try {
+      tags = await readExifFromBytes(await file.readAsBytes());
+    } catch (_) {
+      return;
+    }
+    if (tags.isEmpty) return;
+
+    final filled = <String>[];
+
+    final shotAt = _exifDate(tags['EXIF DateTimeOriginal']);
+    if (shotAt != null) {
+      _date = shotAt;
+      filled.add('date');
+    }
+
+    final lat = _exifCoord(tags['GPS GPSLatitude'], tags['GPS GPSLatitudeRef']);
+    final lng = _exifCoord(
+      tags['GPS GPSLongitude'],
+      tags['GPS GPSLongitudeRef'],
+    );
+    if (lat != null && lng != null && _lat == null) {
+      _lat = lat;
+      _lng = lng;
+      filled.add('location');
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    if (filled.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Auto-filled ${filled.join(', ')} from photo'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  DateTime? _exifDate(IfdTag? tag) {
+    final s = tag?.printable;
+    if (s == null) return null;
+    final m = RegExp(
+      r'(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})',
+    ).firstMatch(s);
+    if (m == null) return null;
+    try {
+      return DateTime(
+        int.parse(m[1]!),
+        int.parse(m[2]!),
+        int.parse(m[3]!),
+        int.parse(m[4]!),
+        int.parse(m[5]!),
+        int.parse(m[6]!),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  double? _exifCoord(IfdTag? value, IfdTag? ref) {
+    if (value == null) return null;
+    final parts = value.values.toList();
+    if (parts.length < 3) return null;
+    try {
+      double d(dynamic r) => (r as Ratio).toDouble();
+      var dec = d(parts[0]) + d(parts[1]) / 60 + d(parts[2]) / 3600;
+      final r = ref?.printable.trim().toUpperCase() ?? '';
+      if (r == 'S' || r == 'W') dec = -dec;
+      return dec;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -160,6 +267,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
           note: _note.text.trim(),
           rating: _rating,
           favorite: _favorite,
+          tags: _tags,
+          template: _template,
         ),
         newSourceImagePath: _pickedImagePath,
       );
@@ -175,6 +284,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
         sourceImagePath: _pickedImagePath,
         lat: _lat,
         lng: _lng,
+        tags: _tags,
+        template: _template,
       );
       // Favorite is handled by store.setFavorite after creation
       if (_favorite) {
@@ -260,7 +371,15 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                     // ── Live preview ────────────────────────
                     _SectionLabel('Preview'),
                     const SizedBox(height: 10),
-                    WalletTicketCard(ticket: _preview()),
+                    MemoryTicketCard(ticket: _preview()),
+                    const SizedBox(height: 16),
+
+                    // ── Template selector ──────────────────
+                    _TemplatePicker(
+                      selected: _template,
+                      categoryColor: _category.color,
+                      onChanged: (t) => setState(() => _template = t),
+                    ),
                     const SizedBox(height: 28),
 
                     // ── Photo ──────────────────────────────
@@ -311,7 +430,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                         ),
                         const _RowDivider(),
                         _ActionRow(
-                          icon: Icons.calendar_today_rounded,
+                          icon: Amicons.iconly_calendar_fill,
                           label: 'Date',
                           value: DateFormat('EEEE, MMM d, yyyy').format(_date),
                           onTap: _pickDate,
@@ -334,8 +453,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                         const _RowDivider(),
                         _ActionRow(
                           icon: _hasLocation
-                              ? Icons.place_rounded
-                              : Icons.add_location_alt_outlined,
+                              ? Amicons.iconly_location_fill
+                              : Amicons.iconly_location_fill,
                           iconColor: _hasLocation ? AppColors.primary : null,
                           label: 'Location',
                           value: _hasLocation
@@ -357,7 +476,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
-                                      Icons.close_rounded,
+                                      Amicons.iconly_close_square_fill,
                                       size: 14,
                                       color: AppColors.textSecondary,
                                     ),
@@ -420,8 +539,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                         const _RowDivider(),
                         _ToggleRow(
                           icon: _favorite
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
+                              ? Amicons.iconly_star_fill
+                              : Amicons.iconly_star,
                           iconColor: _favorite
                               ? _category.color
                               : AppColors.textSecondary,
@@ -430,6 +549,49 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                           value: _favorite,
                           onChanged: (v) => setState(() => _favorite = v),
                         ),
+                      ],
+                    ),
+
+                    // ── Tags card ──────────────────────────
+                    const SizedBox(height: 20),
+                    _SectionLabel('Tags'),
+                    const SizedBox(height: 10),
+                    _Card(
+                      children: [
+                        _FieldRow(
+                          label: 'Add tag',
+                          child: TextFormField(
+                            controller: _tagInput,
+                            textInputAction: TextInputAction.done,
+                            textCapitalization: TextCapitalization.words,
+                            style: AppType.body.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                            decoration: _lineDecoration(
+                              'e.g. summer, roadtrip, friends',
+                            ),
+                            onFieldSubmitted: _addTag,
+                          ),
+                        ),
+                        if (_tags.isNotEmpty) ...[
+                          const _RowDivider(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _tags
+                                  .map(
+                                    (t) => _TagChip(
+                                      label: t,
+                                      color: _category.color,
+                                      onRemove: () => _removeTag(t),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -485,7 +647,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           _RoundIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
+            icon: Amicons.iconly_arrow_left_2_fill,
             onTap: onBack,
           ),
           Expanded(
@@ -501,7 +663,7 @@ class _TopBar extends StatelessWidget {
           ),
           if (onDelete != null)
             _RoundIconButton(
-              icon: Icons.delete_outline_rounded,
+              icon: Amicons.iconly_delete_fill,
               iconColor: AppColors.danger,
               onTap: onDelete!,
             )
@@ -565,6 +727,118 @@ class _SectionLabel extends StatelessWidget {
           color: AppColors.textSecondary,
           weight: FontWeight.w700,
         ).copyWith(letterSpacing: 1.4),
+      ),
+    );
+  }
+}
+
+// ═══ TEMPLATE PICKER ═══════════════════════════════════════════════
+class _TemplatePicker extends StatelessWidget {
+  final TicketTemplate selected;
+  final Color categoryColor;
+  final ValueChanged<TicketTemplate> onChanged;
+  const _TemplatePicker({
+    required this.selected,
+    required this.categoryColor,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: TicketTemplate.values.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final t = TicketTemplate.values[i];
+          final active = t == selected;
+          final swatch = t.accent(categoryColor);
+          return Material(
+            color: active
+                ? swatch.withValues(alpha: 0.12)
+                : AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(999),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => onChanged(t),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: active ? swatch : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: swatch,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      t.label,
+                      style: AppType.small.copyWith(
+                        color: active ? swatch : AppColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ═══ TAG CHIP ══════════════════════════════════════════════════════
+class _TagChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onRemove;
+  const _TagChip({
+    required this.label,
+    required this.color,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onRemove,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 7, 8, 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: AppType.small.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Amicons.iconly_close_square, size: 15, color: color),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -735,7 +1009,7 @@ class _ActionRow extends StatelessWidget {
               trailing!
             else
               const Icon(
-                Icons.chevron_right_rounded,
+                Amicons.iconly_arrow_right_2_fill,
                 size: 20,
                 color: AppColors.textTertiary,
               ),
@@ -887,7 +1161,7 @@ class _PhotoPicker extends StatelessWidget {
                         left: 12,
                         bottom: 12,
                         child: _PillButton(
-                          icon: Icons.edit_rounded,
+                          icon: Amicons.iconly_edit_fill,
                           label: 'Change',
                           onTap: onTap,
                         ),
@@ -897,7 +1171,7 @@ class _PhotoPicker extends StatelessWidget {
                           right: 12,
                           top: 12,
                           child: _RoundBadge(
-                            icon: Icons.close_rounded,
+                            icon: Amicons.iconly_close_square_fill,
                             onTap: onClear!,
                           ),
                         ),
@@ -923,7 +1197,7 @@ class _PhotoPicker extends StatelessWidget {
               color: accent.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.add_a_photo_outlined, size: 26, color: accent),
+            child: Icon(Amicons.iconly_camera_fill, size: 26, color: accent),
           ),
           const SizedBox(height: 14),
           Text(
@@ -1102,7 +1376,7 @@ class _StarPicker extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                filled ? Amicons.iconly_star_fill : Amicons.iconly_star,
                 size: 22,
                 color: filled ? color : AppColors.textTertiary,
               ),

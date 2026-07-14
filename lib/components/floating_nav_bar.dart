@@ -1,209 +1,106 @@
+// lib/components/floating_nav_bar.dart
+import 'package:amicons/amicons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 
-class AppNavItem {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-
-  const AppNavItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-  });
-}
-
-/// Floating nav — white rounded pill of tabs + a circular FAB whose
-/// icon/action changes per page. Fully smooth animations, warm shadows.
 class FloatingNavBar extends StatelessWidget {
-  final List<AppNavItem> items;
-  final int index;
-  final ValueChanged<int> onSelect;
-  final IconData fabIcon;
-  final VoidCallback onFab;
-  final String fabTooltip;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
   const FloatingNavBar({
     super.key,
-    required this.items,
-    required this.index,
-    required this.onSelect,
-    required this.fabIcon,
-    required this.onFab,
-    this.fabTooltip = '',
+    required this.currentIndex,
+    required this.onTap,
   });
+
+  static const _tabs = [
+    _TabData(
+      outline: Amicons.iconly_home_broken,
+      filled: Amicons.iconly_home_fill,
+      label: 'Home',
+    ),
+    _TabData(
+      outline: Amicons.iconly_search_broken,
+      filled: Amicons.iconly_search_fill,
+      label: 'Search',
+    ),
+    _TabData(
+      outline: Amicons.iconly_plus_fill,
+      filled: Amicons.iconly_plus,
+      label: 'Add',
+    ),
+    _TabData(
+      outline: Amicons.iconly_calendar_broken,
+      filled: Amicons.iconly_calendar_fill,
+      label: 'Calendar',
+    ),
+    _TabData(
+      outline: Amicons.iconly_location_broken,
+      filled: Amicons.iconly_location_fill,
+      label: 'Map',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.55),
+        border: Border(top: BorderSide(color: Color(0x14000000), width: 0.5)),
+      ),
+      child: SizedBox(
+        height: 60,
         child: Row(
-          children: [
-            Expanded(
-              child: _NavPill(items: items, index: index, onSelect: onSelect),
-            ),
-            const SizedBox(width: 12),
-            _NavFab(icon: fabIcon, tooltip: fabTooltip, onTap: onFab),
-          ],
+          children: List.generate(_tabs.length, (i) {
+            return Expanded(
+              child: _NavTab(
+                data: _tabs[i],
+                selected: currentIndex == i,
+                isCenter: i == 2,
+                onTap: () {
+                  if (i == 2) {
+                    HapticFeedback.mediumImpact();
+                  } else {
+                    if (currentIndex == i) return;
+                    HapticFeedback.selectionClick();
+                  }
+                  onTap(i);
+                },
+              ),
+            );
+          }),
         ),
       ),
     );
   }
 }
 
-// ═══ NAV PILL ══════════════════════════════════════════════════════
-class _NavPill extends StatefulWidget {
-  final List<AppNavItem> items;
-  final int index;
-  final ValueChanged<int> onSelect;
-
-  const _NavPill({
-    required this.items,
-    required this.index,
-    required this.onSelect,
+class _TabData {
+  final IconData outline;
+  final IconData filled;
+  final String label;
+  const _TabData({
+    required this.outline,
+    required this.filled,
+    required this.label,
   });
-
-  @override
-  State<_NavPill> createState() => _NavPillState();
 }
 
-class _NavPillState extends State<_NavPill>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late Animation<double> _animation;
-  late double _fromIndex;
-  late double _toIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _fromIndex = widget.index.toDouble();
-    _toIndex = widget.index.toDouble();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-      value: 1.0,
-    );
-    _animation = _buildAnimation();
-  }
-
-  @override
-  void didUpdateWidget(covariant _NavPill old) {
-    super.didUpdateWidget(old);
-    if (old.index != widget.index) {
-      // Start from the current visual position (handles rapid taps smoothly)
-      _fromIndex = _currentIndicatorPos();
-      _toIndex = widget.index.toDouble();
-      _animation = _buildAnimation();
-      _controller.forward(from: 0);
-    }
-  }
-
-  double _currentIndicatorPos() {
-    return _fromIndex + (_toIndex - _fromIndex) * _animation.value;
-  }
-
-  Animation<double> _buildAnimation() {
-    return CurvedAnimation(
-      parent: _controller,
-      // Material 3 "emphasized" spring — smooth, slight overshoot feel
-      curve: Curves.easeInOutCubicEmphasized,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x1F3C2814),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: const Color(0x0A3C2814),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / widget.items.length;
-          return Stack(
-            children: [
-              // ── Smoothly sliding indicator pill ────────────
-              AnimatedBuilder(
-                animation: _animation,
-                builder: (context, _) {
-                  final pos = _currentIndicatorPos();
-                  return Positioned(
-                    left: pos * tabWidth,
-                    top: 0,
-                    bottom: 0,
-                    width: tabWidth,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryFaint,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // ── Tabs ──────────────────────────────────────
-              Row(
-                children: [
-                  for (var i = 0; i < widget.items.length; i++)
-                    Expanded(
-                      child: _NavTab(
-                        item: widget.items[i],
-                        selected: i == widget.index,
-                        onTap: () {
-                          if (i == widget.index) return;
-                          HapticFeedback.selectionClick();
-                          widget.onSelect(i);
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ═══ SINGLE TAB ═══════════════════════════════════════════════════
 class _NavTab extends StatelessWidget {
-  final AppNavItem item;
+  final _TabData data;
   final bool selected;
+  final bool isCenter;
   final VoidCallback onTap;
 
   const _NavTab({
-    required this.item,
+    required this.data,
     required this.selected,
+    required this.isCenter,
     required this.onTap,
   });
 
@@ -212,50 +109,50 @@ class _NavTab extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: item.label,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          highlightColor: AppColors.primary.withValues(alpha: 0.04),
+      label: data.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox.expand(
           child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 320),
+            duration: const Duration(milliseconds: 260),
             curve: Curves.easeOutCubic,
-            tween: Tween<double>(begin: 0, end: selected ? 1 : 0),
+            tween: Tween(
+              begin: 0.0,
+              // Center never "selects" visually — always 0
+              end: (!isCenter && selected) ? 1.0 : 0.0,
+            ),
             builder: (context, t, _) {
-              // Smoothly interpolate color and size together
-              final color = Color.lerp(
-                AppColors.textTertiary,
-                AppColors.primary,
-                t,
-              )!;
-              final scale = 1.0 + (0.08 * t); // Icon "swells" 8%
+              // Center tab: always brand color
+              // Regular tab: lerp from tertiary → brand
+              final color = isCenter
+                  ? AppColors.primary
+                  : Color.lerp(AppColors.textTertiary, AppColors.primary, t)!;
+
+              final iconSize = isCenter ? 40.0 : 26.0;
+
+              // Center: always broken outline
+              // Regular: broken → filled based on animation
+              final icon = isCenter
+                  ? data.outline
+                  : (t > 0.5 ? data.filled : data.outline);
+
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Transform.scale(
-                    scale: scale,
-                    child: Icon(
-                      // Icon swap happens at 50% progress for cleanness
-                      t > 0.5 ? item.selectedIcon : item.icon,
-                      size: 22,
-                      color: color,
-                    ),
+                    scale: 1.0 + 0.06 * t,
+                    child: Icon(icon, size: iconSize, color: color),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      height: 1.1,
-                      fontWeight: t > 0.5 ? FontWeight.w700 : FontWeight.w500,
-                      color: color,
-                      letterSpacing: 0.1,
+                  const SizedBox(height: 4),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    width: (!isCenter && selected) ? 5 : 0,
+                    height: (!isCenter && selected) ? 5 : 0,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: t),
+                      shape: BoxShape.circle,
                     ),
                   ),
                 ],
@@ -264,138 +161,6 @@ class _NavTab extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ═══ FAB ═══════════════════════════════════════════════════════════
-class _NavFab extends StatefulWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  const _NavFab({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  @override
-  State<_NavFab> createState() => _NavFabState();
-}
-
-class _NavFabState extends State<_NavFab> with SingleTickerProviderStateMixin {
-  late final AnimationController _pressController;
-  late final Animation<double> _pressScale;
-
-  @override
-  void initState() {
-    super.initState();
-    _pressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 140),
-      reverseDuration: const Duration(milliseconds: 220),
-      value: 0,
-    );
-    _pressScale = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(
-        parent: _pressController,
-        curve: Curves.easeOut,
-        reverseCurve: Curves.easeOutBack,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pressController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final reduce = MediaQuery.of(context).disableAnimations;
-
-    Widget fab = ScaleTransition(
-      scale: reduce ? const AlwaysStoppedAnimation(1.0) : _pressScale,
-      child: Container(
-        width: 58,
-        height: 58,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary,
-              AppColors.primary.withValues(alpha: 0.92),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0x1F3C2814),
-              blurRadius: 20, 
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: const Color(0x0A3C2814),
-              blurRadius: 1,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                widget.onTap();
-              },
-              onTapDown: reduce ? null : (_) => _pressController.forward(),
-              onTapUp: reduce ? null : (_) => _pressController.reverse(),
-              onTapCancel: reduce ? null : () => _pressController.reverse(),
-              splashColor: Colors.white.withValues(alpha: 0.20),
-              highlightColor: Colors.white.withValues(alpha: 0.08),
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 320),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, anim) {
-                    return FadeTransition(
-                      opacity: anim,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.7, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: anim,
-                            curve: Curves.easeOutCubic,
-                          ),
-                        ),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Icon(
-                    widget.icon,
-                    key: ValueKey(widget.icon),
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    return Semantics(
-      button: true,
-      label: widget.tooltip.isEmpty ? 'Action' : widget.tooltip,
-      child: widget.tooltip.isEmpty
-          ? fab
-          : Tooltip(message: widget.tooltip, child: fab),
     );
   }
 }

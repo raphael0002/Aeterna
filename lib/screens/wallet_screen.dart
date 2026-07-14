@@ -1,3 +1,5 @@
+// lib/screens/wallet_screen.dart
+import 'package:amicons/amicons.dart';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -13,7 +15,8 @@ import '../models/ticket.dart';
 import '../providers/filter_providers.dart';
 import '../providers/ticket_store_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/wallet_ticket_card.dart';
+import '../widgets/memory_ticket_card.dart';
+import '../widgets/ticket_skeleton.dart';
 import '../widgets/world_map_backdrop.dart';
 
 // ─── Filter helper (public, reusable) ──────────────────────────────
@@ -28,7 +31,8 @@ List<Ticket> filterTickets(
     if (category != null && t.category != category) return false;
     if (starredOnly && !t.favorite) return false;
     if (q.isNotEmpty) {
-      final hay = '${t.title} ${t.venue} ${t.note}'.toLowerCase();
+      final hay = '${t.title} ${t.venue} ${t.note} ${t.tags.join(' ')}'
+          .toLowerCase();
       if (!hay.contains(q)) return false;
     }
     return true;
@@ -121,7 +125,6 @@ class WalletScreen extends ConsumerWidget {
       starredOnly: starred,
     );
 
-    // Category counts (starred-aware, so numbers match what user sees)
     final counts = _computeCounts(all, starredOnly: starred);
 
     return Scaffold(
@@ -132,18 +135,15 @@ class WalletScreen extends ConsumerWidget {
           final topInset = mq.padding.top;
           final screenH = constraints.maxHeight;
 
-          // Compact hero — smaller than before
           final heroH = (screenH * 0.30).clamp(250.0, 310.0);
 
           return Stack(
             children: [
-              // ── Orange base ─────────────────────────────
               const Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(color: AppColors.primary),
                 ),
               ),
-              // ── World map ───────────────────────────────
               Positioned(
                 top: 0,
                 left: 0,
@@ -152,14 +152,10 @@ class WalletScreen extends ConsumerWidget {
                 child: const WorldMapBackdrop(
                   opacity: 0.8,
                   scale: 3.2,
-                  // offsetY: -1.5,
-                  // offsetX: -0.35,
                   offsetY: -0.9,
                   offsetX: -0.4,
                 ),
               ),
-
-              // ── Hero content ────────────────────────────
               Positioned(
                 top: 0,
                 left: 0,
@@ -186,8 +182,6 @@ class WalletScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              // ── White sheet with content ────────────────
               Positioned(
                 top: heroH,
                 left: 0,
@@ -202,14 +196,13 @@ class WalletScreen extends ConsumerWidget {
                       tickets: tickets,
                       category: category,
                       starred: starred,
+                      loading: !store.isLoaded,
                       onTicketTap: (t) => _openDetail(context, t),
                       onAdd: () => _addTicket(context),
                     ),
                   ),
                 ),
               ),
-
-              // ── Grabber inside notch ────────────────────
               Positioned(
                 top: heroH + 5,
                 left: 0,
@@ -278,11 +271,10 @@ class _Hero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row: recap + tabs pill + more ─────────
           Row(
             children: [
               _HeroIconButton(
-                icon: Icons.auto_awesome_rounded,
+                icon: Amicons.iconly_star_fill,
                 onTap: onRecap,
                 tooltip: 'Year in Stubs',
               ),
@@ -297,18 +289,17 @@ class _Hero extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _HeroIconButton(icon: Icons.more_horiz_rounded, onTap: onMore),
+              _HeroIconButton(
+                icon: Amicons.iconly_more_square_fill,
+                onTap: onMore,
+              ),
             ],
           ),
-
           const SizedBox(height: 18),
-
-          // ── Big count + label ─────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 RichText(
                   text: TextSpan(
@@ -348,10 +339,7 @@ class _Hero extends StatelessWidget {
               ],
             ),
           ),
-
           const Spacer(),
-
-          // ── Category strip ────────────────────────────
           SizedBox(
             height: 40,
             child: ListView(
@@ -360,7 +348,7 @@ class _Hero extends StatelessWidget {
               children: [
                 _HeroCategoryChip(
                   label: 'All',
-                  icon: Icons.apps_rounded,
+                  icon: Amicons.iconly_category_fill,
                   count: counts.values.fold(0, (a, b) => a + b),
                   selected: category == null,
                   onTap: () => onCategoryChanged(null),
@@ -385,7 +373,6 @@ class _Hero extends StatelessWidget {
   }
 }
 
-// ─── Hero icon button (share/recap/more) ──────────────────────────
 class _HeroIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -419,7 +406,6 @@ class _HeroIconButton extends StatelessWidget {
   }
 }
 
-// ─── Tab pill (in place of "My Wallet" title) ─────────────────────
 class _TabPill extends StatelessWidget {
   final List<String> tabs;
   final int selectedIndex;
@@ -477,7 +463,6 @@ class _TabPill extends StatelessWidget {
   }
 }
 
-// ─── Category chip on hero (with count badge) ─────────────────────
 class _HeroCategoryChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -562,6 +547,7 @@ class _SheetContent extends StatelessWidget {
   final bool starred;
   final void Function(Ticket) onTicketTap;
   final VoidCallback onAdd;
+  final bool loading;
 
   const _SheetContent({
     required this.total,
@@ -570,17 +556,23 @@ class _SheetContent extends StatelessWidget {
     required this.starred,
     required this.onTicketTap,
     required this.onAdd,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 30),
+        child: TicketListSkeleton(),
+      );
+    }
     if (total == 0) return _EmptyWallet(onAdd: onAdd);
 
     return Column(
       children: [
-        // ── Section header ──────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 30, 20, 14),
+          padding: const EdgeInsets.fromLTRB(20, 26, 20, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -615,18 +607,17 @@ class _SheetContent extends StatelessWidget {
             ],
           ),
         ),
-
-        // ── List ───────────────────────────────────────
         Expanded(
           child: tickets.isEmpty
               ? const _EmptyFilter()
               : ListView.separated(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   itemCount: tickets.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-                  itemBuilder: (ctx, i) => WalletTicketCard(
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (ctx, i) => MemoryTicketCard(
                     ticket: tickets[i],
+                    variant: MemoryCardVariant.compact,
                     onTap: () => onTicketTap(tickets[i]),
                   ),
                 ),
@@ -661,7 +652,7 @@ class _EmptyWallet extends StatelessWidget {
               height: 88,
               decoration: const BoxDecoration(shape: BoxShape.circle),
               child: const Icon(
-                Icons.confirmation_number_outlined,
+                Amicons.iconly_ticket_fill,
                 size: 72,
                 color: AppColors.primary,
               ),
@@ -686,7 +677,7 @@ class _EmptyWallet extends StatelessWidget {
               height: 54,
               child: FilledButton.icon(
                 onPressed: onAdd,
-                icon: const Icon(Icons.add_rounded, size: 20),
+                icon: const Icon(Amicons.iconly_plus_broken, size: 20),
                 label: const Text('Capture a memory'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -725,7 +716,7 @@ class _EmptyFilter extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.search_off_rounded,
+                Amicons.iconly_search_fill,
                 size: 28,
                 color: AppColors.textTertiary,
               ),
@@ -795,7 +786,7 @@ class _MoreSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _SheetTile(
-              icon: Icons.add_rounded,
+              icon: Amicons.iconly_plus_fill,
               label: 'New ticket',
               subtitle: 'Capture a fresh memory',
               onTap: onAdd,
@@ -803,21 +794,21 @@ class _MoreSheet extends StatelessWidget {
             ),
             const _SheetDivider(),
             _SheetTile(
-              icon: Icons.auto_awesome_rounded,
+              icon: Amicons.iconly_star_fill,
               label: 'Year in Stubs',
               subtitle: 'Your recap for this year',
               onTap: onRecap,
             ),
             const _SheetDivider(),
             _SheetTile(
-              icon: Icons.file_upload_outlined,
+              icon: Amicons.iconly_upload_fill,
               label: 'Export backup',
               subtitle: 'Save all tickets to a JSON file',
               onTap: onExport,
             ),
             const _SheetDivider(),
             _SheetTile(
-              icon: Icons.file_download_outlined,
+              icon: Amicons.iconly_download_fill,
               label: 'Import backup',
               subtitle: 'Restore from a backup file',
               onTap: onImport,
@@ -889,7 +880,7 @@ class _SheetTile extends StatelessWidget {
               ),
             ),
             const Icon(
-              Icons.chevron_right_rounded,
+              Amicons.iconly_arrow_right_2_fill,
               color: AppColors.textTertiary,
             ),
           ],

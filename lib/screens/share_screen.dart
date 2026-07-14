@@ -1,3 +1,4 @@
+import 'package:amicons/amicons.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -29,9 +30,9 @@ extension _SharePrivacyX on SharePrivacy {
   };
 
   IconData get icon => switch (this) {
-    SharePrivacy.stubOnly => Icons.lock_outline_rounded,
-    SharePrivacy.stubPlusNote => Icons.notes_rounded,
-    SharePrivacy.full => Icons.lock_open_rounded,
+    SharePrivacy.stubOnly => Amicons.iconly_lock_fill,
+    SharePrivacy.stubPlusNote => Amicons.iconly_document_fill,
+    SharePrivacy.full => Amicons.iconly_unlock_fill,
   };
 
   bool get showNote => this != SharePrivacy.stubOnly;
@@ -177,7 +178,7 @@ class _ShareScreenState extends State<ShareScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.ios_share_rounded, size: 18),
+                          : const Icon(Amicons.iconly_send_fill, size: 18),
                       label: Text(
                         _sharing ? 'Preparing…' : 'Share as image',
                         style: AppType.button.copyWith(
@@ -223,7 +224,7 @@ class _TopBar extends StatelessWidget {
                 width: 42,
                 height: 42,
                 child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
+                  Amicons.iconly_arrow_left_2_fill,
                   size: 18,
                   color: AppColors.textPrimary,
                 ),
@@ -407,7 +408,7 @@ class _ShareCard extends StatelessWidget {
                           (_) => Padding(
                             padding: const EdgeInsets.only(right: 2),
                             child: Icon(
-                              Icons.star_rounded,
+                              Amicons.iconly_star_fill,
                               size: 14,
                               color: ticket.category.color,
                             ),

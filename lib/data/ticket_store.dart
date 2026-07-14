@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/ticket.dart';
+import '../models/ticket_template.dart';
 import 'backup.dart';
 
 class TicketStore extends ChangeNotifier {
@@ -54,6 +55,8 @@ class TicketStore extends ChangeNotifier {
     String? sourceImagePath,
     double? lat,
     double? lng,
+    List<String> tags = const [],
+    TicketTemplate template = TicketTemplate.classic,
   }) async {
     final id = _uuid.v4();
     final storedImage = (sourceImagePath == null || kIsWeb)
@@ -72,6 +75,8 @@ class TicketStore extends ChangeNotifier {
       favorite: false,
       lat: lat,
       lng: lng,
+      tags: tags,
+      template: template,
       createdAt: DateTime.now(),
     );
     _tickets.add(ticket);
